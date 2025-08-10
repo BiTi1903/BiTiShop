@@ -137,13 +137,16 @@ export default function AccountPage() {
         setSuccessMessage('Đăng ký thành công!');
       }
       setTimeout(() => router.push('/'), 1500);
-    } catch (err: any) {
-      // Lấy thông báo lỗi thân thiện dựa vào code lỗi firebase
-      const friendlyMessage = err.code
-        ? getFriendlyFirebaseAuthErrorMessage(err.code)
-        : 'Có lỗi xảy ra, vui lòng thử lại';
-      setError(friendlyMessage);
-    } finally {
+    } catch (err: unknown) {
+  if (typeof err === 'object' && err !== null && 'code' in err) {
+    const firebaseError = err as { code: string };
+    const friendlyMessage = getFriendlyFirebaseAuthErrorMessage(firebaseError.code);
+    setError(friendlyMessage);
+  } else {
+    setError('Có lỗi xảy ra, vui lòng thử lại');
+  }
+}
+ finally {
       setLoading(false);
     }
   };
