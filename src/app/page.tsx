@@ -1,4 +1,3 @@
-// app/page.tsx
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
@@ -7,6 +6,8 @@ import Footer from '../components/Footer';
 import ProductCard from '../components/ProductCard';
 import { getProducts, getCategories } from '../lib/api';
 import { Product, Category } from '../types/product';
+
+type CartItem = Product & { quantity: number };
 
 export default function Home() {
   const categoryRef = useRef<HTMLDivElement | null>(null);
@@ -61,8 +62,8 @@ export default function Home() {
   };
 
   const handleAddToCart = (product: Product) => {
-    const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const index = existingCart.findIndex((item: any) => item.id === product.id);
+    const existingCart: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
+    const index = existingCart.findIndex((item) => item.id === product.id);
 
     if (index >= 0) {
       existingCart[index].quantity += 1;
