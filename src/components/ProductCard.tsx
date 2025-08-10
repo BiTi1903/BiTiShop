@@ -78,17 +78,18 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
           </p>
         </div>
 
-        {/* Giá */}
-        <div className="mb-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-1xl font-bold text-red-500">{formatPrice(product.price)}</span>
-            {product.originalPrice && (
-              <span className="text-sm text-gray-500 line-through">
-                {formatPrice(product.originalPrice)}
-              </span>
-            )}
-          </div>
-        </div>
+       {/* Giá */}
+<div className="mb-4 flex flex-col">
+  <span className="text-xl font-bold text-red-500">{formatPrice(product.price)}</span>
+
+  {product.originalPrice && (
+    <span className="text-sm text-gray-500 line-through mt-1">
+      {formatPrice(product.originalPrice)}
+    </span>
+  )}
+</div>
+
+
 
         {/* Link TikTok & Shopee - chiều cao cố định */}
         <div className="flex gap-2 mb-6 flex-wrap h-[40px]">

@@ -1,56 +1,89 @@
-// components/Header.tsx
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getCategories } from '../lib/api';
 import { getCartItems } from '../lib/cart';
 import { Category } from '../types/product';
+import { FaFacebookF } from 'react-icons/fa';
+
+import { auth } from '../lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 export default function Header() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [cartCount, setCartCount] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+
+  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Lấy danh mục
     const fetchCategories = async () => {
       const categoriesData = await getCategories();
       setCategories(categoriesData);
     };
     fetchCategories();
- const updateCartCount = () => setCartCount(
-      getCartItems().reduce((sum, item) => sum + item.quantity, 0)
-    );
-    // Lấy số lượng giỏ hàng
-    setCartCount(getCartItems().length);
+
+    setCartCount(getCartItems().reduce((sum, item) => sum + item.quantity, 0));
 
     const handleStorageChange = () => {
-      setCartCount(getCartItems().length);
+      setCartCount(getCartItems().reduce((sum, item) => sum + item.quantity, 0));
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+
+    // Listen Firebase Auth state change
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setIsLoggedIn(!!user);
+    });
+
+    // Click outside dropdown to close it
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowAccountMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      unsubscribe();
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
+
+  const handleSignOut = async () => {
+    await signOut(auth);
+    setShowAccountMenu(false);
+    // Có thể redirect về trang chủ hoặc trang login nếu muốn
+  };
 
   return (
     <header className="bg-white shadow-lg sticky top-0 z-50">
+      {/* Top bar */}
       <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm py-2">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <span>📞 Hotline: 0865340630</span>
-            <span className="hidden md:inline">📧 lebaothienbiti@gmail.com</span>
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between space-x-4">
+          <div className="flex items-center space-x-4 min-w-[220px] flex-shrink-0">
+            <span className="whitespace-nowrap truncate">📞 Hotline: 0865340630</span>
           </div>
-          <div className="hidden md:block">
-            <span>🚚 Miễn phí vận chuyển mọi đơn hàng</span>
+
+          <div className="flex-1 text-center whitespace-nowrap px-2">
+            <span className="truncate block">🚚 Miễn phí vận chuyển</span>
           </div>
+
+          
         </div>
       </div>
 
+      {/* Main header */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between py-4">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            🛍️ BiTi Shop
+            🛍️ BITI SHOP
           </h1>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
             <div className="relative w-full">
@@ -65,13 +98,45 @@ export default function Header() {
               </button>
             </div>
           </div>
-          <div className="flex items-center space-x-6">
-            <div className="hidden md:flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition">
-              <span>👤</span>
-              <span className="text-black font-medium">Tài khoản</span>
-            </div>
+          <div className="flex items-center space-x-6 relative" ref={accountMenuRef}>
+            {!isLoggedIn && (
+              <Link
+                href="/account"
+                className="hidden md:flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition"
+              >
+                <span className="text-black font-medium">Đăng nhập</span>
+              </Link>
+            )}
 
-            {/* Giỏ hàng */}
+            {isLoggedIn && (
+              <div
+                className="hidden md:flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition select-none"
+                onClick={() => setShowAccountMenu(!showAccountMenu)}
+              >
+                <span>👤</span>
+                <span className="text-black font-medium">Tài khoản</span>
+              </div>
+            )}
+
+            {/* Dropdown menu */}
+            {showAccountMenu && (
+              <div className="absolute top-full right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
+                <Link
+                  href="/account/info"
+                  className="block px-4 py-2 hover:bg-blue-100 text-gray-700"
+                  onClick={() => setShowAccountMenu(false)}
+                >
+                  Thông tin
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 text-gray-700"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+
             <Link href="/cart" className="relative hover:text-blue-600 cursor-pointer transition">
               <span className="text-2xl">🛒</span>
               {cartCount > 0 && (
@@ -80,44 +145,9 @@ export default function Header() {
                 </span>
               )}
             </Link>
-
-            <button
-              className="md:hidden p-2 text-2xl"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              ☰
-            </button>
           </div>
         </div>
       </div>
-
-      <nav className="border-t bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          {isMenuOpen && (
-            <div className="md:hidden py-4 border-t">
-              <div className="space-y-3">
-                {categories.map((category) => (
-                  <a
-                    key={category.id}
-                    href={`#${category.slug}`}
-                    className="flex items-center space-x-3 text-gray-700 hover:text-blue-600 transition font-medium py-2"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <span className="text-xl">{category.icon}</span>
-                    <span>{category.name}</span>
-                  </a>
-                ))}
-                <div className="pt-4 border-t">
-                  <a href="#" className="flex items-center space-x-2 text-gray-700 py-2">
-                    <span>👤</span>
-                    <span>Tài khoản</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </nav>
     </header>
   );
 }

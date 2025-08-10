@@ -96,7 +96,7 @@ export default function Home() {
               <span className="block text-yellow-300">Giảm đến 50%</span>
             </h1>
             <p className="text-xl lg:text-2xl mb-8 text-gray-100 max-w-3xl mx-auto">
-              Sản phẩm chất lượng cao với giá tốt nhất. Miễn phí vận chuyển!
+              Sản phẩm chất lượng cao, giá tốt. Miễn phí vận chuyển!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">

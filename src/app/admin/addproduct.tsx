@@ -21,6 +21,7 @@ export default function AddProductModal({
   const [formData, setFormData] = useState({
     name: '',
     price: '',
+    originalPrice: '',
     description: '',
     image: '',
     tiktokLink: '',
@@ -35,6 +36,7 @@ export default function AddProductModal({
       setFormData({
         name: initialData.name,
         price: initialData.price.toString(),
+        originalPrice: initialData.originalPrice ? initialData.originalPrice.toString() : '',
         description: initialData.description || '',
         image: initialData.image || '',
         tiktokLink: initialData.tiktokLink || '',
@@ -47,6 +49,7 @@ export default function AddProductModal({
       setFormData({
         name: '',
         price: '',
+        originalPrice: '',
         description: '',
         image: '',
         tiktokLink: '',
@@ -66,9 +69,18 @@ export default function AddProductModal({
       return;
     }
 
+    if (formData.isSale && !formData.originalPrice) {
+      alert('Vui lòng nhập Giá gốc khi sản phẩm đang giảm giá');
+      return;
+    }
+
     const productData: Omit<Product, 'id'> = {
       name: formData.name.trim(),
       price: parseInt(formData.price),
+      originalPrice:
+        formData.isSale && formData.originalPrice
+          ? parseInt(formData.originalPrice)
+          : undefined,
       description: formData.description.trim(),
       image: formData.image.trim(),
       tiktokLink: formData.tiktokLink.trim(),
@@ -112,21 +124,6 @@ export default function AddProductModal({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               autoComplete="off"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
-              Giá (VNĐ) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              required
-              min="0"
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition"
-              placeholder="Nhập giá sản phẩm"
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
             />
           </div>
 
@@ -190,6 +187,22 @@ export default function AddProductModal({
             />
           </div>
 
+          {/* Đặt Giá sản phẩm xuống dưới, ngay trên Shopee */}
+          <div>
+            <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
+              Giá (VNĐ) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              required
+              min="0"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition"
+              placeholder="Nhập giá sản phẩm"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
               Link Shopee
@@ -224,6 +237,23 @@ export default function AddProductModal({
               <span className="text-gray-700 font-semibold">Giảm giá</span>
             </label>
           </div>
+
+          {formData.isSale && (
+            <div>
+              <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
+                Giá gốc (VNĐ) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                required={formData.isSale}
+                className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition"
+                placeholder="Nhập giá gốc sản phẩm"
+                value={formData.originalPrice}
+                onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+              />
+            </div>
+          )}
 
           <div className="pt-8 flex justify-end gap-4">
             <button
