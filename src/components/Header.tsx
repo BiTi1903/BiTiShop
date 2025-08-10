@@ -71,9 +71,7 @@ export default function Header() {
             <span className="whitespace-nowrap truncate">📞 Hotline: 0865340630</span>
           </div>
 
-          <div className="flex-1 text-center whitespace-nowrap px-2">
-            <span className="truncate block">🚚 Miễn phí vận chuyển</span>
-          </div>
+         
 
           
         </div>
@@ -82,7 +80,7 @@ export default function Header() {
       {/* Main header */}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between py-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             🛍️ BITI SHOP
           </h1>
           <div className="hidden md:flex flex-1 max-w-2xl mx-8">
@@ -102,7 +100,7 @@ export default function Header() {
             {!isLoggedIn && (
               <Link
                 href="/account"
-                className="hidden md:flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition"
+                className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition"
               >
                 <span className="text-black font-medium">Đăng nhập</span>
               </Link>
@@ -110,7 +108,7 @@ export default function Header() {
 
             {isLoggedIn && (
               <div
-                className="hidden md:flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition select-none"
+                className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer transition select-none"
                 onClick={() => setShowAccountMenu(!showAccountMenu)}
               >
                 <span>👤</span>

@@ -16,7 +16,7 @@ export default function Footer() {
           </div>
 
           {/* Quick links */}
-          <div>
+          {/* <div>
             <h4 className="font-semibold text-lg mb-4">Liên kết nhanh</h4>
             <ul className="space-y-3">
               <li><a href="#" className="text-gray-300 hover:text-white transition">Sản phẩm</a></li>
@@ -24,7 +24,7 @@ export default function Footer() {
               <li><a href="#" className="text-gray-300 hover:text-white transition">Tin tức</a></li>
               <li><a href="#" className="text-gray-300 hover:text-white transition">Liên hệ</a></li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Customer service */}
           <div>

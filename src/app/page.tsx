@@ -96,7 +96,7 @@ export default function Home() {
               <span className="block text-yellow-300">Giảm đến 50%</span>
             </h1>
             <p className="text-xl lg:text-2xl mb-8 text-gray-100 max-w-3xl mx-auto">
-              Sản phẩm chất lượng cao, giá tốt. Miễn phí vận chuyển!
+              Đỉnh cao chất lượng, giá cả cạnh tranh. <br />🚚 Miễn phí vận chuyển toàn quốc!
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <button className="bg-white text-blue-600 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg">
@@ -131,7 +131,7 @@ export default function Home() {
       {/* Danh mục */}
       <section
         ref={categoryRef}
-        className={`py-14 bg-white transition-all duration-500 ${
+        className={`py-12 bg-white transition-all duration-500 ${
           highlightCategory ? 'ring-4 ring-yellow-400' : ''
         }`}
       >
@@ -167,7 +167,7 @@ export default function Home() {
       </section>
 
       {/* Sản phẩm */}
-      <section ref={productRef} className="py-14">
+      <section ref={productRef} className="py-9">
         <div className="max-w-7xl mx-auto px-4">
           <h3 className="p-3 text-black text-3xl font-bold mb-6">
             {selectedCategory === 'all'
