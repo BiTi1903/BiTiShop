@@ -85,16 +85,16 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
             </p>
           </div>
 
-         {/* Giá */}
-  <div className="mb-4 flex flex-col">
-    <span className="text-xl font-bold text-red-500">{formatPrice(product.price)}</span>
+          {/* Giá */}
+          <div className="mb-4 flex flex-col">
+            <span className="text-xl font-bold text-red-500">{formatPrice(product.price)}</span>
 
-    {product.originalPrice && (
-      <span className="text-sm text-gray-500 line-through mt-1">
-        {formatPrice(product.originalPrice)}
-      </span>
-    )}
-  </div>
+            {product.originalPrice && (
+              <span className="text-sm text-gray-500 line-through mt-1">
+                {formatPrice(product.originalPrice)}
+              </span>
+            )}
+          </div>
 
           {/* Link TikTok & Shopee - chiều cao cố định */}
           <div className="flex gap-2 mb-6 flex-wrap h-[40px]">
@@ -151,7 +151,7 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
             </div>
             <div className="flex-1">
               <p className="font-semibold text-sm">Thành công!</p>
-              <p className="text-xs opacity-90">Đã thêm "{product.name}" vào giỏ hàng</p>
+              <p className="text-xs opacity-90">Đã thêm &quot;{product.name}&quot; vào giỏ hàng</p>
             </div>
             <button
               onClick={() => setShowToast(false)}
