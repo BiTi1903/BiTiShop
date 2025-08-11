@@ -74,13 +74,10 @@ export default function AddProductModal({
       return;
     }
 
-    const productData: Omit<Product, 'id'> = {
+    // Tạo object base (không có originalPrice)
+    const productDataBase = {
       name: formData.name.trim(),
       price: parseInt(formData.price),
-      originalPrice:
-        formData.isSale && formData.originalPrice
-          ? parseInt(formData.originalPrice)
-          : undefined,
       description: formData.description.trim(),
       image: formData.image.trim(),
       tiktokLink: formData.tiktokLink.trim(),
@@ -89,6 +86,11 @@ export default function AddProductModal({
       isNew: formData.isNew,
       isSale: formData.isSale,
     };
+
+    // Thêm originalPrice nếu isSale=true và có giá gốc
+    const productData = formData.isSale && formData.originalPrice
+      ? { ...productDataBase, originalPrice: parseInt(formData.originalPrice) }
+      : { ...productDataBase };
 
     await onSave(productData);
   };
@@ -187,7 +189,19 @@ export default function AddProductModal({
             />
           </div>
 
-          {/* Đặt Giá sản phẩm xuống dưới, ngay trên Shopee */}
+          <div>
+            <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
+              Link Shopee
+            </label>
+            <input
+              type="url"
+              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition"
+              placeholder="https://shopee.vn/product/..."
+              value={formData.shopeeLink}
+              onChange={(e) => setFormData({ ...formData, shopeeLink: e.target.value })}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
               Giá (VNĐ) <span className="text-red-500">*</span>
@@ -200,19 +214,6 @@ export default function AddProductModal({
               placeholder="Nhập giá sản phẩm"
               value={formData.price}
               onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold mb-2 text-gray-700 select-none">
-              Link Shopee
-            </label>
-            <input
-              type="url"
-              className="w-full px-5 py-3 border border-gray-300 rounded-xl shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-3 focus:ring-blue-400 focus:border-transparent transition"
-              placeholder="https://shopee.vn/product/..."
-              value={formData.shopeeLink}
-              onChange={(e) => setFormData({ ...formData, shopeeLink: e.target.value })}
             />
           </div>
 

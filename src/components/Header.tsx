@@ -71,7 +71,9 @@ export default function Header() {
             <span className="whitespace-nowrap truncate">📞 Hotline: 0865340630</span>
           </div>
 
-         
+          {/* <div className="flex-1 text-center whitespace-nowrap px-2">
+            <span className="truncate block">🚚 Miễn phí Ship</span>
+          </div> */}
 
           
         </div>
