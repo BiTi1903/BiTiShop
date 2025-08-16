@@ -33,7 +33,7 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
       onAddToCart(product);
     } else {
       const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
-      const index = existingCart.findIndex((item: any) => item.id === product.id);
+const index = existingCart.findIndex((item: Product) => item.id === product.id);
 
       if (index >= 0) {
         existingCart[index].quantity += 1;

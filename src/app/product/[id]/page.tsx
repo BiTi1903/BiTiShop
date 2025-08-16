@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import { useEffect, useState, Fragment } from 'react';
 import Header from '../../../components/Header';
@@ -74,7 +75,7 @@ export default function ProductDetailPage() {
     if (!product) return;
 
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const index = cart.findIndex((item: any) => item.id === product.id);
+const index = cart.findIndex((item: Product) => item.id === product.id);
 
     if (index >= 0) {
       cart[index].quantity += quantity;
@@ -168,8 +169,11 @@ export default function ProductDetailPage() {
         {/* Breadcrumb */}
         <nav className="mb-6 text-sm text-slate-600">
           <ol className="flex items-center space-x-2">
-            <li><a href="/" className="hover:text-blue-600 transition-colors cursor-pointer">Trang chủ</a></li>
-            <li className="text-slate-400">/</li>
+<li>
+  <Link href="/" className="hover:text-blue-600 transition-colors cursor-pointer">
+    Trang chủ
+  </Link>
+</li>            <li className="text-slate-400">/</li>
             <li><a href="/products" className="hover:text-blue-600 transition-colors cursor-pointer">Sản phẩm</a></li>
             <li className="text-slate-400">/</li>
             <li className="text-slate-900 font-medium truncate">{product.name}</li>

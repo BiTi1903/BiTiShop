@@ -136,17 +136,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (cart.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-teal-50 via-blue-100 to-rose-100">
-        <Header />
-        <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-lg text-center">
-          <p className="text-7xl mb-4">🛒</p>
-          <p className="text-xl font-semibold text-slate-700">Giỏ hàng của bạn đang trống</p>
-        </div>
-      </div>
-    );
-  }
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-blue-100 to-rose-100 font-sans">
