@@ -1,6 +1,9 @@
-// components/ProductCard.tsx
+'use client';
+
 import { Product } from '../types/product';
 import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: Product;
@@ -10,40 +13,58 @@ interface ProductCardProps {
 
 export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductCardProps) {
   const [showToast, setShowToast] = useState(false);
+  const router = useRouter();
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-  };
+  if (!product.id) {
+    console.error('Product ID is missing');
+    return null;
+  }
+
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
   const discountPercent = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (onAddToCart) {
       onAddToCart(product);
     } else {
-      // Hiển thị toast notification
+      const existingCart = JSON.parse(localStorage.getItem('cart') || '[]');
+      const index = existingCart.findIndex((item: any) => item.id === product.id);
+
+      if (index >= 0) {
+        existingCart[index].quantity += 1;
+      } else {
+        existingCart.push({ ...product, quantity: 1 });
+      }
+
+      localStorage.setItem('cart', JSON.stringify(existingCart));
+      window.dispatchEvent(new Event('storage'));
       setShowToast(true);
-      // Tự động ẩn sau 3 giây
       setTimeout(() => setShowToast(false), 3000);
     }
   };
 
-  const handleBuyNow = () => {
-    if (onBuyNow) {
-      onBuyNow(product);
-    } else {
-      const url = product.shopeeLink || `https://shopee.vn/search?keyword=${encodeURIComponent(product.name)}`;
-      window.open(url, '_blank');
-    }
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    // Lưu sản phẩm vào cart tạm thời (chỉ 1 sản phẩm)
+    const buyNowCart = [{ ...product, quantity: 1 }];
+    localStorage.setItem('cart', JSON.stringify(buyNowCart));
+    window.dispatchEvent(new Event('storage'));
+
+    // Chuyển sang trang checkout
+    router.push('/checkout');
   };
 
   return (
     <>
-      <div className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-blue-200 flex flex-col">
+      <div className="group bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100 hover:border-rose-200 flex flex-col">
         {/* Hình ảnh */}
-        <div className="relative overflow-hidden">
+        <Link href={`/product/${product.id}`} className="relative overflow-hidden block">
           {product.image ? (
             <img
               src={product.image}
@@ -55,57 +76,46 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
               <span className="text-6xl">📦</span>
             </div>
           )}
+
+          {/* Nhãn NEW / SALE */}
           <div className="absolute top-3 left-3 flex flex-col space-y-2">
             {product.isNew && (
-              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
-                NEW
-              </span>
+              <span className="bg-emerald-500 text-white text-xs px-2 py-1 rounded-full font-semibold">NEW</span>
             )}
             {product.isSale && discountPercent > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+              <span className="bg-rose-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                 -{discountPercent}%
               </span>
             )}
           </div>
-          <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition">❤️</button>
-            <button className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition">👁️</button>
-          </div>
-        </div>
+        </Link>
 
         {/* Nội dung */}
         <div className="p-4 flex flex-col flex-1">
-          {/* Tên & mô tả - chiều cao cố định */}
-          <div className="mb-1 h-[96px]">
-            <h3 className=" text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
-              {product.name}
-            </h3>
-            <p className="text-[12px] text-gray-600 mt-1 line-clamp-2">
-              {product.description || 'Chưa có mô tả'}
-            </p>
-          </div>
+          <Link href={`/product/${product.id}`} className="mb-1 h-[96px] block">
+            <h3 className="text-gray-900 line-clamp-2 group-hover:text-rose-600 transition-colors">{product.name}</h3>
+            <p className="text-[12px] text-gray-600 mt-1 line-clamp-2">{product.description || 'Chưa có mô tả'}</p>
+          </Link>
 
           {/* Giá */}
           <div className="mb-4 flex flex-col">
-            <span className="text-xl font-bold text-red-500">{formatPrice(product.price)}</span>
-
+            <span className="text-xl font-bold text-rose-600">{formatPrice(product.price)}</span>
             {product.originalPrice && (
-              <span className="text-sm text-gray-500 line-through mt-1">
-                {formatPrice(product.originalPrice)}
-              </span>
+              <span className="text-sm text-gray-500 line-through mt-1">{formatPrice(product.originalPrice)}</span>
             )}
           </div>
 
-          {/* Link TikTok & Shopee - chiều cao cố định */}
+          {/* Link TikTok & Shopee */}
           <div className="flex gap-2 mb-6 flex-wrap h-[40px]">
             {product.tiktokLink && (
               <a
                 href={product.tiktokLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-blue-200 transition-colors"
+                className="text-black px-3 py-1 rounded-full text-xs font-medium hover:bg-rose-50 transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
-                🎵 TikTok
+                🎵 Mua ở TikTok
               </a>
             )}
             {product.shopeeLink && (
@@ -113,9 +123,10 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
                 href={product.shopeeLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-orange-100 text-orange-600 px-3 py-1 rounded-full text-xs font-medium hover:bg-orange-200 transition-colors"
+                className="text-black px-3 py-1 rounded-full text-xs font-medium hover:bg-rose-50 transition-colors"
+                onClick={(e) => e.stopPropagation()}
               >
-                🛒 Shopee
+                🛒 Mua ở Shopee
               </a>
             )}
           </div>
@@ -124,13 +135,13 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
           <div className="flex flex-col space-y-2 mt-auto">
             <button
               onClick={handleAddToCart}
-              className="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition font-medium text-sm"
+              className="flex-1 bg-rose-50 text-rose-700 py-2 px-4 rounded-lg hover:bg-rose-100 transition font-medium text-sm"
             >
               Thêm vào giỏ
             </button>
             <button
               onClick={handleBuyNow}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+              className="flex-1 bg-rose-500 text-white py-2 px-4 rounded-lg hover:bg-rose-600 transition font-medium text-sm"
             >
               Mua ngay
             </button>
@@ -138,10 +149,10 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
         </div>
       </div>
 
-      {/* Toast Notification */}
+      {/* Toast */}
       {showToast && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 min-w-[320px] transform transition-all duration-500 ease-out">
+        <div className="fixed top-4 right-4 z-50 animate-toast">
+          <div className="bg-gradient-to-r from-rose-500 to-rose-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 min-w-[320px] transform transition-all duration-500 ease-out">
             <div className="flex-shrink-0">
               <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,10 +164,7 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
               <p className="font-semibold text-sm">Thành công!</p>
               <p className="text-xs opacity-90">Đã thêm &quot;{product.name}&quot; vào giỏ hàng</p>
             </div>
-            <button
-              onClick={() => setShowToast(false)}
-              className="flex-shrink-0 text-white hover:text-gray-200 transition-colors"
-            >
+            <button onClick={() => setShowToast(false)} className="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
@@ -164,24 +172,6 @@ export default function ProductCard({ product, onAddToCart, onBuyNow }: ProductC
           </div>
         </div>
       )}
-
-      {/* CSS Animation Styles */}
-      <style jsx>{`
-        @keyframes slide-in-right {
-          0% {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          100% {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        .animate-slide-in-right {
-          animation: slide-in-right 0.5s ease-out;
-        }
-      `}</style>
     </>
   );
 }

@@ -10,25 +10,25 @@ import { Listbox, Transition } from '@headlessui/react';
 import { CheckIcon, ChevronUpDownIcon } from '@heroicons/react/20/solid';
 
 type CartItem = Product & { quantity: number };
-
 type SortOption = 'priceAsc' | 'priceDesc' | null;
 
 export default function Home() {
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const productRef = useRef<HTMLDivElement | null>(null);
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [highlightCategory, setHighlightCategory] = useState(false);
-  const [searchTerm, setSearchTerm] = useState<string>(''); 
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>(null);
-
   const [currentPage, setCurrentPage] = useState(1);
+
   const productsPerPage = 12;
 
   const sortOptions = [
-    { id: 'priceAsc', name: 'Tăng dần' },
-    { id: 'priceDesc', name: 'Giảm dần' },
+    { id: 'priceAsc', name: 'Giá tăng dần' },
+    { id: 'priceDesc', name: 'Giá giảm dần' },
   ];
 
   useEffect(() => {
@@ -46,23 +46,18 @@ export default function Home() {
     const cat = categories.find((c) => c.slug === selectedCategory);
     const categoryMatch =
       selectedCategory === 'all' || (cat ? product.category === cat.name || product.category === cat.slug : false);
-
     const searchMatch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
-
     return categoryMatch && searchMatch;
   });
 
-  // Sắp xếp theo giá nếu có chọn sortOption
+  // Sắp xếp
   const sortedProducts = sortOption
-    ? filteredProducts.slice().sort((a, b) => {
-        if (sortOption === 'priceAsc') {
-          return a.price - b.price;
-        } else {
-          return b.price - a.price;
-        }
-      })
+    ? filteredProducts.slice().sort((a, b) =>
+        sortOption === 'priceAsc' ? a.price - b.price : b.price - a.price
+      )
     : filteredProducts;
 
+  // Pagination
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -70,32 +65,24 @@ export default function Home() {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    if (categoryRef.current) {
-      categoryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setHighlightCategory(true);
-      setTimeout(() => setHighlightCategory(false), 600);
-    }
+    productRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleCategoryClick = (slug: string) => {
     setSelectedCategory(slug);
-    setSortOption(null); // reset dropdown về chưa chọn
+    setSortOption(null);
     setCurrentPage(1);
-    if (productRef.current) {
-      productRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    productRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleAddToCart = (product: Product) => {
     const existingCart: CartItem[] = JSON.parse(localStorage.getItem('cart') || '[]');
     const index = existingCart.findIndex((item) => item.id === product.id);
-
     if (index >= 0) {
       existingCart[index].quantity += 1;
     } else {
       existingCart.push({ ...product, quantity: 1 });
     }
-
     localStorage.setItem('cart', JSON.stringify(existingCart));
     window.dispatchEvent(new Event('storage'));
     alert(`Đã thêm ${product.name} vào giỏ hàng!`);
@@ -111,57 +98,32 @@ export default function Home() {
       <Header />
 
       {/* Banner */}
-      <section className="relative bg-gradient-to-r from-blue-700 via-purple-700 to-pink-600 text-white overflow-hidden shadow-xl">
+      <section className="relative bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white overflow-hidden shadow-xl">
         <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative max-w-7xl mx-auto px-4 py-20 lg:py-32 animate-fadeIn">
-          <div className="text-center">
-            <h1 className="text-4xl lg:text-6xl font-extrabold mb-6 drop-shadow-lg">
-              Siêu Sale
-              <span className="block text-yellow-300 animate-bounce">Giảm đến 50%</span>
-            </h1>
-            <p className="text-xl lg:text-2xl mb-8 text-gray-100 max-w-3xl mx-auto leading-relaxed">
-              Đỉnh cao chất lượng, giá cả cạnh tranh. <br />
-              🚚 Miễn phí vận chuyển toàn quốc!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <button className="bg-white text-blue-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl">
-                🛒 Mua sắm ngay
-              </button>
-              <button className="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-blue-700 transition-all shadow-lg">
-                📞 Hotline: 0865.340.630
-              </button>
-            </div>
+        <div className="relative max-w-7xl mx-auto px-4 py-20 lg:py-32 animate-fadeIn text-center">
+          <h1 className="text-4xl lg:text-6xl font-extrabold mb-6 drop-shadow-lg">
+            Siêu Sale <span className="block text-yellow-300 animate-bounce">Giảm đến 50%</span>
+          </h1>
+          <p className="text-xl lg:text-2xl mb-8 text-gray-100 max-w-3xl mx-auto leading-relaxed">
+            Đỉnh cao chất lượng, giá cả cạnh tranh. <br /> 🚚 Miễn phí vận chuyển toàn quốc!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button className="bg-white text-blue-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-100 transition-all transform hover:scale-105 shadow-xl">
+              🛒 Mua sắm ngay
+            </button>
+            <button className="border-2 border-white text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-white hover:text-blue-700 transition-all shadow-lg">
+              📞 Hotline: 0865.340.630
+            </button>
           </div>
         </div>
       </section>
 
-      {/* Flash sale */}
-      <section className="bg-red-600 text-white py-4 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-center space-x-4 text-lg font-bold">
-            <span className="animate-pulse">⚡SALE</span>
-            <span>|</span>
-            <span>Còn lại:</span>
-            <div className="flex space-x-2">
-              {['02', '15', '30'].map((time, i) => (
-                <div key={i} className="bg-white text-red-600 px-2 py-1 rounded font-mono shadow-md">
-                  {time}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Danh mục & Search */}
+      {/* Danh mục */}
       <section
         ref={categoryRef}
-        className={`py-6 bg-white transition-all duration-500 shadow-inner ${
-          highlightCategory ? 'ring-4 ring-yellow-400' : ''
-        }`}
+        className={`py-6 bg-white transition-all duration-500 ${highlightCategory ? 'ring-4 ring-yellow-400' : ''}`}
       >
         <div className="max-w-7xl mx-auto px-4">
-          {/* Danh mục nút */}
           <div className="flex flex-wrap justify-center gap-4 mb-6">
             <button
               onClick={() => {
@@ -170,12 +132,13 @@ export default function Home() {
               }}
               className={`px-6 py-3 rounded-full font-semibold transition-all ${
                 selectedCategory === 'all'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
               🏪 Tất cả
             </button>
+
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -185,7 +148,7 @@ export default function Home() {
                 }}
                 className={`px-6 py-3 rounded-full font-semibold transition-all flex items-center space-x-2 ${
                   selectedCategory === category.slug
-                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -201,11 +164,6 @@ export default function Home() {
               onSubmit={(e) => {
                 e.preventDefault();
                 setCurrentPage(1);
-                if (categoryRef.current) {
-                  categoryRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  setHighlightCategory(true);
-                  setTimeout(() => setHighlightCategory(false), 600);
-                }
               }}
               className="relative"
             >
@@ -216,9 +174,7 @@ export default function Home() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full border border-gray-300 rounded-full py-3 pl-12 pr-20 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                🔍
-              </span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">🔍</span>
               <button
                 type="submit"
                 className="absolute right-2 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-5 py-2 rounded-full hover:bg-blue-700 transition"
@@ -230,7 +186,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Sản phẩm + dropdown sắp xếp */}
+      {/* Sản phẩm */}
       <section ref={productRef} className="py-12">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center mb-6">
@@ -241,17 +197,24 @@ export default function Home() {
             </h3>
 
             {/* Dropdown sắp xếp */}
-            <div className="w-30 relative">
-              <Listbox value={sortOption} onChange={(value) => { setSortOption(value); setCurrentPage(1); }}>
+            <div className="w-38 relative">
+              <Listbox
+                value={sortOption}
+                onChange={(value) => {
+                  setSortOption(value);
+                  setCurrentPage(1);
+                }}
+              >
                 <div className="relative mt-1">
-                  <Listbox.Button className="relative w-full cursor-pointer rounded-full border border-blue-200 bg-white py-1 pl-3 pr-1 text-left text-blue-700 shadow-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 transition">
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-full border border-red-200 bg-white py-1 pl-3 pr-1 text-left text-red-100 shadow-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-100 focus:ring-opacity-75 transition">
                     <span className="block truncate font-bold text-black">
-                      {sortOption === null ? 'Giá' : sortOptions.find(o => o.id === sortOption)?.name}
+                      {sortOption === null ? 'Giá' : sortOptions.find((o) => o.id === sortOption)?.name}
                     </span>
                     <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                       <ChevronUpDownIcon className="h-5 w-5 text-black" aria-hidden="true" />
                     </span>
                   </Listbox.Button>
+
                   <Transition
                     as={Fragment}
                     leave="transition ease-in duration-100"
@@ -264,23 +227,21 @@ export default function Home() {
                           key={option.id}
                           className={({ active }) =>
                             `relative cursor-pointer select-none py-2 pl-10 pr-4 ${
-                              active ? 'bg-blue-100 text-blue-900' : 'text-gray-900'
+                              active ? 'bg-red-50 text-black' : 'text-gray-900'
                             }`
                           }
                           value={option.id}
                         >
                           {({ selected }) => (
                             <>
-                              <span
-                                className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}
-                              >
+                              <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>
                                 {option.name}
                               </span>
-                              {selected ? (
-                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600">
+                              {selected && (
+                                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-red-600">
                                   <CheckIcon className="h-5 w-5" aria-hidden="true" />
                                 </span>
-                              ) : null}
+                              )}
                             </>
                           )}
                         </Listbox.Option>
@@ -292,6 +253,7 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Grid sản phẩm */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {currentProducts.length > 0 ? (
               currentProducts.map((product) => (

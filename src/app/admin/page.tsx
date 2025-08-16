@@ -16,6 +16,7 @@ import { Product } from '../../types/product';
 import AddProductModal from './addproduct';
 import AddCategory from './addcategory';
 import DeleteProductButton from './deleteproduct';
+import ProductDetailModal from '../admin/detail'; // <-- import modal detail
 
 // Hàm slugify đơn giản
 const slugify = (text: string) =>
@@ -28,7 +29,7 @@ const slugify = (text: string) =>
     .replace(/-+$/, '');
 
 export default function AdminPage() {
-  const [user, setUser] = useState<User | null>(null); // <-- sửa ở đây
+  const [user, setUser] = useState<User | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
@@ -39,17 +40,19 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState('');
 
+  // Mới: detail modal
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Load products và categories từ server
         const [productsData, categoriesData] = await Promise.all([getProducts(), getCategories()]);
         setProducts(productsData);
         setFilteredProducts(productsData);
         setCategories(categoriesData.map((cat) => cat.name));
       } else {
-        // Nếu logout thì reset
         setProducts([]);
         setFilteredProducts([]);
         setCategories([]);
@@ -71,9 +74,8 @@ export default function AdminPage() {
     }
   }, [searchQuery, products]);
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(price);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,7 +123,6 @@ export default function AdminPage() {
     alert('Xóa sản phẩm thành công!');
   };
 
-  // Sửa hàm thêm danh mục mới, gọi API lưu category thực sự
   const handleAddCategory = async () => {
     const trimmed = newCategory.trim();
     if (!trimmed) {
@@ -136,7 +137,6 @@ export default function AdminPage() {
 
     try {
       await addCategory({ name: trimmed, slug });
-      // Sau khi thêm thành công, load lại danh mục từ Firebase
       const categoriesData = await getCategories();
       setCategories(categoriesData.map((cat) => cat.name));
       setNewCategory('');
@@ -241,7 +241,7 @@ export default function AdminPage() {
                 ➕ Thêm sản phẩm
               </button>
 
-              {/* Phần nhập danh mục mới + nút thêm danh mục */}
+              {/* Không còn dùng nút chi tiết ở đây nữa */}
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -259,7 +259,6 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {/* Hiển thị danh sách danh mục hiện tại */}
               <AddCategory categories={categories} />
             </div>
           </div>
@@ -298,6 +297,16 @@ export default function AdminPage() {
                       ✏️ Sửa
                     </button>
 
+                    <button
+                      onClick={() => {
+                        setDetailProduct(product);
+                        setIsDetailModalOpen(true);
+                      }}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+                    >
+                      📝 Chi tiết
+                    </button>
+
                     <DeleteProductButton productId={product.id} onDelete={handleDeleteProduct} />
                   </td>
                 </tr>
@@ -307,6 +316,7 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Modal thêm/sửa sản phẩm */}
       <AddProductModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -317,6 +327,29 @@ export default function AdminPage() {
         initialData={editingProduct}
         onSave={handleSaveProduct}
       />
+
+      {/* Modal chi tiết sản phẩm */}
+      {detailProduct && (
+  <ProductDetailModal
+    isOpen={isDetailModalOpen}
+    onClose={() => {
+      setIsDetailModalOpen(false);
+      setDetailProduct(null);
+    }}
+    products={products}
+    initialProductId={detailProduct.id}
+    onSave={async (productId, details) => {
+      await updateProduct(productId, { details });
+      const updatedProducts = await getProducts();
+      setProducts(updatedProducts);
+      setFilteredProducts(updatedProducts);
+      alert('Cập nhật chi tiết sản phẩm thành công!');
+      setIsDetailModalOpen(false);
+      setDetailProduct(null);
+    }}
+  />
+)}
+
     </div>
   );
 }

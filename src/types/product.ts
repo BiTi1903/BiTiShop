@@ -7,11 +7,14 @@ export interface Product {
   originalPrice?: number;
   image: string;
   category: string;
+  subCategory?: string;
   isNew?: boolean;
   isSale?: boolean;
   tiktokLink?: string; // Thêm từ AdminPage
   shopeeLink?: string; // Thêm từ AdminPage
   Slug?: string; // Thêm từ AdminPage
+    details?: { mainCategory: string; subCategory: string }[]; // thêm
+
 }
 
 export interface Category {
