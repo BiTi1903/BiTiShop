@@ -4,6 +4,8 @@ import { Product } from '../types/product';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { auth } from '../lib/firebase';
+
 
 interface ProductCardProps {
   product: Product;
@@ -49,16 +51,24 @@ const index = existingCart.findIndex((item: Product) => item.id === product.id);
   };
 
   const handleBuyNow = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  e.stopPropagation();
 
-    // Lưu sản phẩm vào cart tạm thời (chỉ 1 sản phẩm)
-    const buyNowCart = [{ ...product, quantity: 1 }];
-    localStorage.setItem('cart', JSON.stringify(buyNowCart));
-    window.dispatchEvent(new Event('storage'));
+  const user = auth.currentUser;
 
-    // Chuyển sang trang checkout
-    router.push('/checkout');
-  };
+  if (!user) {
+    // Nếu chưa đăng nhập thì chuyển sang trang login
+    router.push('/account');
+    return;
+  }
+
+  // Nếu đã đăng nhập thì mua ngay
+  const buyNowCart = [{ ...product, quantity: 1 }];
+  localStorage.setItem('cart', JSON.stringify(buyNowCart));
+  window.dispatchEvent(new Event('storage'));
+
+  router.push('/checkout');
+};
+
 
   return (
     <>
@@ -69,7 +79,7 @@ const index = existingCart.findIndex((item: Product) => item.id === product.id);
             <img
               src={product.image}
               alt={product.name}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              className="w-full h-38 object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
@@ -149,29 +159,6 @@ const index = existingCart.findIndex((item: Product) => item.id === product.id);
         </div>
       </div>
 
-      {/* Toast */}
-      {showToast && (
-        <div className="fixed top-4 right-4 z-50 animate-toast">
-          <div className="bg-gradient-to-r from-rose-500 to-rose-600 text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3 min-w-[320px] transform transition-all duration-500 ease-out">
-            <div className="flex-shrink-0">
-              <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-            </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm">Thành công!</p>
-              <p className="text-xs opacity-90">Đã thêm &quot;{product.name}&quot; vào giỏ hàng</p>
-            </div>
-            <button onClick={() => setShowToast(false)} className="flex-shrink-0 text-white hover:text-gray-200 transition-colors">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }
