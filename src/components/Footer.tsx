@@ -11,7 +11,7 @@ export default function Footer() {
               🛍️ BITI SHOP
             </h3>
             <p className="text-gray-300 mb-4">
-              Cửa hàng trực tuyến uy tín với hàng ngàn sản phẩm chất lượng và dịch vụ tận tâm.
+              Cửa hàng uy tín, tận tâm, trách nhiệm.
             </p>
           </div>
 

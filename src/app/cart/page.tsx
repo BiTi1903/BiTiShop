@@ -63,11 +63,11 @@ export default function CartPage() {
       <Header />
 
       <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 flex items-center gap-2">
+        {/* <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 flex items-center gap-2">
           <span className="text-3xl text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-blue-600">
             🛍️ Giỏ hàng ({items.length})
           </span>
-        </h1>
+        </h1> */}
 
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center mt-20 bg-white/80 backdrop-blur-md rounded-3xl p-8 border border-white/20 shadow-lg text-center">

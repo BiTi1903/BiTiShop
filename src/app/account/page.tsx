@@ -5,10 +5,27 @@ import { auth, firestore } from '../../lib/firebase';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  User,
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { FaCheckCircle, FaExclamationCircle, FaEye, FaEyeSlash } from 'react-icons/fa';
+import { doc, setDoc, serverTimestamp, getDoc, FieldValue } from 'firebase/firestore';
+import { FaCheckCircle, FaExclamationCircle, FaEye, FaEyeSlash, FaGoogle, FaFacebookF } from 'react-icons/fa';
+
+interface UserData {
+  email: string;
+  displayName: string;
+  photoURL: string;
+  provider: string;
+  name?: string;
+  phone?: string;
+  address?: string;
+  createdAt?: FieldValue;
+  lastLogin: FieldValue;
+  updatedAt?: FieldValue;
+}
 
 function Notification({
   type,
@@ -66,6 +83,12 @@ function getFriendlyFirebaseAuthErrorMessage(code: string) {
       return 'Mã xác thực không hợp lệ.';
     case 'auth/invalid-verification-id':
       return 'ID xác thực không hợp lệ.';
+    case 'auth/popup-closed-by-user':
+      return 'Cửa sổ đăng nhập đã bị đóng.';
+    case 'auth/popup-blocked':
+      return 'Trình duyệt đã chặn cửa sổ đăng nhập. Vui lòng cho phép popup.';
+    case 'auth/cancelled-popup-request':
+      return 'Yêu cầu đăng nhập đã bị hủy.';
     default:
       return 'Có lỗi xảy ra, vui lòng thử lại.';
   }
@@ -81,6 +104,7 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [socialLoading, setSocialLoading] = useState<'google' | 'facebook' | null>(null);
 
   const router = useRouter();
 
@@ -102,6 +126,120 @@ export default function AccountPage() {
     }
   }, [successMessage, error]);
 
+  // Create or update user document in Firestore
+  const createOrUpdateUserDoc = async (user: User, provider?: string) => {
+    const userRef = doc(firestore, 'users', user.uid);
+    const userDoc = await getDoc(userRef);
+
+    const baseUserData = {
+      email: user.email || '',
+      displayName: user.displayName || '',
+      photoURL: user.photoURL || '',
+      provider: provider || 'email',
+      lastLogin: serverTimestamp(),
+    };
+
+    if (!userDoc.exists()) {
+      // New user - create document with social provider info
+      const newUserData: UserData = {
+        ...baseUserData,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+      };
+
+      // For social logins, auto-fill name from displayName
+      if (provider === 'google' || provider === 'facebook') {
+        newUserData.name = user.displayName || '';
+        // Try to extract phone from provider data if available
+        if (user.phoneNumber) {
+          newUserData.phone = user.phoneNumber;
+        }
+      }
+
+      await setDoc(userRef, newUserData);
+    } else {
+      // Existing user - update last login and merge any new info
+      const existingData = userDoc.data();
+      const mergeData: Partial<UserData> = {
+        ...baseUserData,
+      };
+
+      // If user doesn't have name but social provider has displayName, update it
+      if (!existingData?.name && user.displayName && (provider === 'google' || provider === 'facebook')) {
+        mergeData.name = user.displayName;
+      }
+
+      // If user doesn't have phone but provider has phoneNumber, update it
+      if (!existingData?.phone && user.phoneNumber) {
+        mergeData.phone = user.phoneNumber;
+      }
+
+      await setDoc(userRef, mergeData, { merge: true });
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    setSocialLoading('google');
+
+    try {
+      const provider = new GoogleAuthProvider();
+      // Add additional scopes if needed
+      provider.addScope('profile');
+      provider.addScope('email');
+
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      await createOrUpdateUserDoc(user, 'google');
+
+      setSuccessMessage('Đăng nhập Google thành công!');
+      setTimeout(() => router.push('/'), 1500);
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        const firebaseError = err as { code: string };
+        const friendlyMessage = getFriendlyFirebaseAuthErrorMessage(firebaseError.code);
+        setError(friendlyMessage);
+      } else {
+        setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+      }
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setError(null);
+    setSuccessMessage(null);
+    setSocialLoading('facebook');
+
+    try {
+      const provider = new FacebookAuthProvider();
+      // Add additional scopes if needed
+      provider.addScope('email');
+      provider.addScope('public_profile');
+
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      await createOrUpdateUserDoc(user, 'facebook');
+
+      setSuccessMessage('Đăng nhập Facebook thành công!');
+      setTimeout(() => router.push('/'), 1500);
+    } catch (err: unknown) {
+      if (typeof err === 'object' && err !== null && 'code' in err) {
+        const firebaseError = err as { code: string };
+        const friendlyMessage = getFriendlyFirebaseAuthErrorMessage(firebaseError.code);
+        setError(friendlyMessage);
+      } else {
+        setError('Đăng nhập Facebook thất bại. Vui lòng thử lại.');
+      }
+    } finally {
+      setSocialLoading(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -122,7 +260,8 @@ export default function AccountPage() {
 
     try {
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        await createOrUpdateUserDoc(userCredential.user, 'email');
         setSuccessMessage('Đăng nhập thành công!');
       } else {
         const userCredential = await createUserWithEmailAndPassword(
@@ -130,14 +269,7 @@ export default function AccountPage() {
           email,
           password
         );
-
-        const user = userCredential.user;
-
-        await setDoc(doc(firestore, 'users', user.uid), {
-          email: user.email,
-          createdAt: serverTimestamp(),
-        });
-
+        await createOrUpdateUserDoc(userCredential.user, 'email');
         setSuccessMessage('Đăng ký thành công!');
       }
       setTimeout(() => router.push('/'), 1500);
@@ -165,10 +297,7 @@ export default function AccountPage() {
 
       {/* Form container */}
       <div className="relative z-10 w-full max-w-md">
-        <form
-          onSubmit={handleSubmit}
-          className="backdrop-blur-xl bg-white/10 p-8 rounded-3xl shadow-2xl border border-white/20 transform transition-all duration-700 hover:scale-105"
-        >
+        <div className="backdrop-blur-xl bg-white/10 p-8 rounded-3xl shadow-2xl border border-white/20 transform transition-all duration-700 hover:scale-105">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl mb-4 shadow-lg">
@@ -186,95 +315,139 @@ export default function AccountPage() {
           {error && <Notification type="error" message={error} />}
           {successMessage && <Notification type="success" message={successMessage} />}
 
-          {/* Email input */}
-          <div className="mb-6">
-            <label className="text-white block mb-3 font-medium text-sm tracking-wide">Email</label>
-            <div className="relative">
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/15"
-                placeholder="your.email@example.com"
-                autoComplete="username"
-              />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/0 via-purple-400/0 to-pink-400/0 opacity-0 transition-opacity duration-300 pointer-events-none focus-within:opacity-10"></div>
+          {/* Social Login Buttons */}
+          <div className="mb-8 space-y-4">
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading || socialLoading !== null}
+              className="w-full bg-white/15 backdrop-blur-lg border border-white/20 rounded-2xl px-6 py-4 text-white font-medium transition-all duration-300 hover:bg-white/20 hover:scale-105 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {socialLoading === 'google' ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <FaGoogle size={20} className="text-white" />
+              )}
+              <span>{socialLoading === 'google' ? 'Đang đăng nhập...' : 'Tiếp tục với Google'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleFacebookSignIn}
+              disabled={loading || socialLoading !== null}
+              className="w-full bg-blue-600/20 backdrop-blur-lg border border-blue-400/30 rounded-2xl px-6 py-4 text-white font-medium transition-all duration-300 hover:bg-blue-600/30 hover:scale-105 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {socialLoading === 'facebook' ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <FaFacebookF size={20} className="text-white" />
+              )}
+              <span>{socialLoading === 'facebook' ? 'Đang đăng nhập...' : 'Tiếp tục với Facebook'}</span>
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="relative mb-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-white/20"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-transparent text-gray-300 font-medium">hoặc</span>
             </div>
           </div>
 
-          {/* Password input */}
-          <div className="mb-6">
-            <label className="text-white block mb-3 font-medium text-sm tracking-wide">Mật khẩu</label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl px-6 py-4 pr-12 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/15"
-                placeholder="Enter your password"
-                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors duration-200"
-              >
-                {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          {/* Confirm password (register mode) */}
-          {mode === 'register' && (
+          {/* Email/Password Form */}
+          <form onSubmit={handleSubmit}>
+            {/* Email input */}
             <div className="mb-6">
-              <label className="text-white block mb-3 font-medium text-sm tracking-wide">
-                Xác nhận mật khẩu
-              </label>
+              <label className="text-white block mb-3 font-medium text-sm tracking-wide">Email</label>
               <div className="relative">
                 <input
-                  type={showConfirmPassword ? "text" : "password"}
+                  type="email"
                   required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl px-6 py-4 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+                  placeholder="your.email@example.com"
+                  autoComplete="username"
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-400/0 via-purple-400/0 to-pink-400/0 opacity-0 transition-opacity duration-300 pointer-events-none focus-within:opacity-10"></div>
+              </div>
+            </div>
+
+            {/* Password input */}
+            <div className="mb-6">
+              <label className="text-white block mb-3 font-medium text-sm tracking-wide">Mật khẩu</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl px-6 py-4 pr-12 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/15"
-                  placeholder="Enter your password again"
-                  autoComplete="new-password"
+                  placeholder="Enter your password"
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors duration-200"
                 >
-                  {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  {showPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
                 </button>
               </div>
             </div>
-          )}
 
-          {/* Submit button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white py-4 rounded-2xl font-semibold text-lg shadow-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl ${
-              loading 
-                ? 'opacity-70 cursor-not-allowed animate-pulse' 
-                : 'hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 active:scale-95'
-            }`}
-          >
-            <span className="relative z-10">
-              {loading
-                ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    {mode === 'login' ? 'Đang đăng nhập...' : 'Đang tạo tài khoản...'}
-                  </div>
-                )
-                : (mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')
-              }
-            </span>
-          </button>
+            {/* Confirm password (register mode) */}
+            {mode === 'register' && (
+              <div className="mb-6">
+                <label className="text-white block mb-3 font-medium text-sm tracking-wide">
+                  Xác nhận mật khẩu
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl px-6 py-4 pr-12 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-300 hover:bg-white/15"
+                    placeholder="Enter your password again"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-300 hover:text-white transition-colors duration-200"
+                  >
+                    {showConfirmPassword ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={loading || socialLoading !== null}
+              className={`w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 text-white py-4 rounded-2xl font-semibold text-lg shadow-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl ${
+                loading || socialLoading !== null
+                  ? 'opacity-70 cursor-not-allowed animate-pulse' 
+                  : 'hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 active:scale-95'
+              }`}
+            >
+              <span className="relative z-10">
+                {loading
+                  ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      {mode === 'login' ? 'Đang đăng nhập...' : 'Đang tạo tài khoản...'}
+                    </div>
+                  )
+                  : (mode === 'login' ? 'Đăng nhập' : 'Tạo tài khoản')
+                }
+              </span>
+            </button>
+          </form>
 
           {/* Mode switch */}
           <div className="mt-8 text-center">
@@ -310,7 +483,7 @@ export default function AccountPage() {
               )}
             </p>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -480,9 +480,9 @@
                   <div className="relative">
                     <Listbox.Button className="relative w-full cursor-pointer rounded-2xl border-2 border-gray-200 bg-white py-3 pl-4 pr-12 text-left shadow-sm hover:border-blue-300 hover:shadow-md focus:outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all duration-300">
                       <span className="flex items-center gap-2 font-semibold text-gray-700">
-                        <span className="text-lg">
+                        {/* <span className="text-lg">
                           {sortOption === 'priceAsc' ? '📈' : sortOption === 'priceDesc' ? '📉' : '🔀'}
-                        </span>
+                        </span> */}
                         {sortOption === null ? 'Sắp xếp theo giá' : sortOptions.find((o) => o.id === sortOption)?.name}
                       </span>
                       <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
@@ -625,14 +625,14 @@
         </section>
 
         <Footer />
-        {/* Music Player */}
+        {/* Music Player
 {showMusicPlayer && (
   <MusicPlayer 
     isMinimized={isPlayerMinimized}
     onToggleMinimize={setIsPlayerMinimized}
     onClose={() => setShowMusicPlayer(false)}
   />
-)}
+)} */}
       </div>
     );
   }
